@@ -5,6 +5,7 @@ import com.expensetracker.model.User;
 import com.expensetracker.repository.ExpenseRepository;
 import com.expensetracker.dto.ExpenseResponse;
 import com.expensetracker.dto.ExpenseSummaryResponse;
+import com.expensetracker.dto.ExpenseRequest;
 
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
@@ -66,7 +67,40 @@ public class ExpenseService {
                 ));
     }
 
-    // ---------- SUMMARY (NEW FEATURE) ----------
+    // ---------- UPDATE ----------
+
+    public Expense updateExpense(Long expenseId, ExpenseRequest request, User user) {
+        Expense expense = expenseRepo.findById(expenseId)
+                .orElseThrow(() -> new RuntimeException("Expense not found"));
+
+        // ownership check (VERY important)
+        if (!expense.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Unauthorized to update this expense");
+        }
+
+        expense.setTitle(request.title);
+        expense.setAmount(request.amount);
+        expense.setCategory(request.category);
+        expense.setDate(request.date);
+
+        return expenseRepo.save(expense);
+    }
+
+    // ---------- DELETE ----------
+
+    public void deleteExpense(Long expenseId, User user) {
+        Expense expense = expenseRepo.findById(expenseId)
+                .orElseThrow(() -> new RuntimeException("Expense not found"));
+
+        // ownership check
+        if (!expense.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Unauthorized to delete this expense");
+        }
+
+        expenseRepo.delete(expense);
+    }
+
+    // ---------- SUMMARY ----------
 
     public List<ExpenseSummaryResponse> getMonthlySummary(
             User user,

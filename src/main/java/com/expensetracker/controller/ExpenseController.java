@@ -108,4 +108,27 @@ public class ExpenseController {
 
         return expenseService.getMonthlySummary(user, month, year);
     }
+    @DeleteMapping("/{id}")
+    public void deleteExpense(@PathVariable Long id, Authentication auth) {
+        String email = auth.getName();
+
+        User user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        expenseService.deleteExpense(id, user);
+    }
+
+    @PutMapping("/{id}")
+    public Expense updateExpense(
+            @PathVariable Long id,
+            @Valid @RequestBody ExpenseRequest req,
+            Authentication auth
+    ) {
+        String email = auth.getName();
+
+        User user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return expenseService.updateExpense(id, req, user);
+    }
 }
