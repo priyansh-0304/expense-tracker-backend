@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
@@ -47,4 +48,5 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             @Param("month") int month,
             @Param("year") int year
     );
+    Optional<Expense> findByIdAndUser(Long id, User user);
 }

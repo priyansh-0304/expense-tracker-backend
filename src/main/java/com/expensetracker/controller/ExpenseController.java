@@ -6,6 +6,7 @@ import com.expensetracker.model.Expense;
 import com.expensetracker.model.User;
 import com.expensetracker.repository.ExpenseRepository;
 import com.expensetracker.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -108,27 +109,34 @@ public class ExpenseController {
 
         return expenseService.getMonthlySummary(user, month, year);
     }
+
     @DeleteMapping("/{id}")
-    public void deleteExpense(@PathVariable Long id, Authentication auth) {
-        String email = auth.getName();
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteExpense(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        User user = userRepo.findByEmail(authentication.getName())
+                .orElseThrow();
 
-        User user = userRepo.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        expenseService.deleteExpense(id, user);
+        expenseService.deleteExpense(user, id);
     }
 
     @PutMapping("/{id}")
     public Expense updateExpense(
             @PathVariable Long id,
-            @Valid @RequestBody ExpenseRequest req,
-            Authentication auth
+            @Valid @RequestBody ExpenseRequest request,
+            Authentication authentication
     ) {
-        String email = auth.getName();
+        User user = userRepo.findByEmail(authentication.getName())
+                .orElseThrow();
 
-        User user = userRepo.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        Expense updated = new Expense();
+        updated.setTitle(request.title);
+        updated.setAmount(request.amount);
+        updated.setCategory(request.category);
+        updated.setDate(request.date);
 
-        return expenseService.updateExpense(id, req, user);
+        return expenseService.updateExpense(user, id, updated);
     }
 }

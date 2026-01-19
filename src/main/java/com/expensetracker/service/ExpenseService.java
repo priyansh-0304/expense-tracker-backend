@@ -7,6 +7,7 @@ import com.expensetracker.dto.ExpenseResponse;
 import com.expensetracker.dto.ExpenseSummaryResponse;
 import com.expensetracker.dto.ExpenseRequest;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -69,33 +70,25 @@ public class ExpenseService {
 
     // ---------- UPDATE ----------
 
-    public Expense updateExpense(Long expenseId, ExpenseRequest request, User user) {
-        Expense expense = expenseRepo.findById(expenseId)
-                .orElseThrow(() -> new RuntimeException("Expense not found"));
+    public Expense updateExpense(User user, Long id, Expense updated) {
+        Expense expense = expenseRepo
+                .findByIdAndUser(id, user)
+                .orElseThrow(() -> new AccessDeniedException("Not allowed"));
 
-        // ownership check (VERY important)
-        if (!expense.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Unauthorized to update this expense");
-        }
-
-        expense.setTitle(request.title);
-        expense.setAmount(request.amount);
-        expense.setCategory(request.category);
-        expense.setDate(request.date);
+        expense.setTitle(updated.getTitle());
+        expense.setAmount(updated.getAmount());
+        expense.setCategory(updated.getCategory());
+        expense.setDate(updated.getDate());
 
         return expenseRepo.save(expense);
     }
 
     // ---------- DELETE ----------
 
-    public void deleteExpense(Long expenseId, User user) {
-        Expense expense = expenseRepo.findById(expenseId)
-                .orElseThrow(() -> new RuntimeException("Expense not found"));
-
-        // ownership check
-        if (!expense.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Unauthorized to delete this expense");
-        }
+    public void deleteExpense(User user, Long id) {
+        Expense expense = expenseRepo
+                .findByIdAndUser(id, user)
+                .orElseThrow(() -> new AccessDeniedException("Not allowed"));
 
         expenseRepo.delete(expense);
     }
