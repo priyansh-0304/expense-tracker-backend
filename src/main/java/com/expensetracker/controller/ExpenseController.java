@@ -2,24 +2,24 @@ package com.expensetracker.controller;
 
 import com.expensetracker.dto.ExpenseRequest;
 import com.expensetracker.dto.ExpenseSummaryResponse;
+import com.expensetracker.dto.ExpenseResponse;
 import com.expensetracker.model.Expense;
 import com.expensetracker.model.User;
-import com.expensetracker.repository.ExpenseRepository;
 import com.expensetracker.repository.UserRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.context.SecurityContextHolder;
 import com.expensetracker.service.ExpenseService;
+
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.web.bind.annotation.RequestParam;
-import com.expensetracker.dto.ExpenseResponse;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/expenses")
@@ -33,14 +33,13 @@ public class ExpenseController {
         this.userRepo = userRepo;
     }
 
+    // ---------------- CREATE ----------------
     @PostMapping
-    public Expense addExpense(@Valid @RequestBody ExpenseRequest request) {
-
-        // get logged-in user's email from JWT
-        String email = (String) SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal();
+    public Expense addExpense(
+            @Valid @RequestBody ExpenseRequest request,
+            Authentication authentication
+    ) {
+        String email = authentication.getName();
 
         User user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -49,26 +48,44 @@ public class ExpenseController {
         expense.setTitle(request.title);
         expense.setAmount(request.amount);
         expense.setCategory(request.category);
+        expense.setPaymentMethod(request.paymentMethod);
+        expense.setNotes(request.notes);
         expense.setDate(request.date);
         expense.setUser(user);
 
         return expenseService.addExpense(expense);
     }
 
+    // ---------------- 🔹 PAGINATED FETCH ----------------
     @GetMapping
-    public List<Expense> getMyExpenses() {
-
-        String email = (String) SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal();
-
-        User user = userRepo.findByEmail(email)
+    public Page<ExpenseResponse> getMyExpenses(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "date") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+    ) {
+        User user = userRepo.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return expenseService.getExpensesForUser(user);
+        Sort sort = Sort.by(
+                sortDir.equalsIgnoreCase("desc")
+                        ? Sort.Direction.DESC
+                        : Sort.Direction.ASC,
+                sortBy
+        );
+
+        return expenseService
+                .getFilteredExpenseResponses(
+                        user,
+                        null,
+                        null,
+                        null,
+                        PageRequest.of(page, size, sort)
+                );
     }
 
+    // ---------------- FILTER (UNCHANGED) ----------------
     @GetMapping("/filter")
     public Page<ExpenseResponse> getFilteredExpenses(
             Authentication authentication,
@@ -77,7 +94,7 @@ public class ExpenseController {
             @RequestParam(required = false) LocalDate to,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
-            @RequestParam(defaultValue = "date") String sortBy,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir
     ) {
         User user = userRepo.findByEmail(authentication.getName())
@@ -98,6 +115,8 @@ public class ExpenseController {
                 PageRequest.of(page, size, sort)
         );
     }
+
+    // ---------------- SUMMARY ----------------
     @GetMapping("/summary")
     public List<ExpenseSummaryResponse> getMonthlySummary(
             Authentication authentication,
@@ -110,6 +129,7 @@ public class ExpenseController {
         return expenseService.getMonthlySummary(user, month, year);
     }
 
+    // ---------------- DELETE ----------------
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteExpense(
@@ -122,6 +142,7 @@ public class ExpenseController {
         expenseService.deleteExpense(user, id);
     }
 
+    // ---------------- UPDATE ----------------
     @PutMapping("/{id}")
     public Expense updateExpense(
             @PathVariable Long id,

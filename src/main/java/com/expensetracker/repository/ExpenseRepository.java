@@ -15,7 +15,11 @@ import java.util.Optional;
 
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
+    // ✅ existing
     List<Expense> findByUser(User user);
+
+    // ✅ REQUIRED FOR SERVER-SIDE PAGINATION
+    Page<Expense> findByUser(User user, Pageable pageable);
 
     @Query("""
         SELECT e FROM Expense e
@@ -48,5 +52,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             @Param("month") int month,
             @Param("year") int year
     );
+
     Optional<Expense> findByIdAndUser(Long id, User user);
 }

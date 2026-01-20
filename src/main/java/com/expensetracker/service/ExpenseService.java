@@ -5,7 +5,6 @@ import com.expensetracker.model.User;
 import com.expensetracker.repository.ExpenseRepository;
 import com.expensetracker.dto.ExpenseResponse;
 import com.expensetracker.dto.ExpenseSummaryResponse;
-import com.expensetracker.dto.ExpenseRequest;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -25,19 +24,21 @@ public class ExpenseService {
     }
 
     // ---------- CREATE ----------
-
     public Expense addExpense(Expense expense) {
         return expenseRepo.save(expense);
     }
 
     // ---------- READ BASIC ----------
-
     public List<Expense> getExpensesForUser(User user) {
         return expenseRepo.findByUser(user);
     }
 
-    // ---------- FILTER (ENTITY) ----------
+    // ---------- 🔹 PAGINATION (NEW) ----------
+    public Page<Expense> getPaginatedExpenses(User user, Pageable pageable) {
+        return expenseRepo.findByUser(user, pageable);
+    }
 
+    // ---------- FILTER (ENTITY) ----------
     public Page<Expense> getFilteredExpenses(
             User user,
             String category,
@@ -49,7 +50,6 @@ public class ExpenseService {
     }
 
     // ---------- FILTER (DTO) ----------
-
     public Page<ExpenseResponse> getFilteredExpenseResponses(
             User user,
             String category,
@@ -69,7 +69,6 @@ public class ExpenseService {
     }
 
     // ---------- UPDATE ----------
-
     public Expense updateExpense(User user, Long id, Expense updated) {
         Expense expense = expenseRepo
                 .findByIdAndUser(id, user)
@@ -84,7 +83,6 @@ public class ExpenseService {
     }
 
     // ---------- DELETE ----------
-
     public void deleteExpense(User user, Long id) {
         Expense expense = expenseRepo
                 .findByIdAndUser(id, user)
@@ -94,7 +92,6 @@ public class ExpenseService {
     }
 
     // ---------- SUMMARY ----------
-
     public List<ExpenseSummaryResponse> getMonthlySummary(
             User user,
             int month,

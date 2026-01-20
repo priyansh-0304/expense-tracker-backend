@@ -3,7 +3,6 @@ package com.expensetracker.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-
 import java.time.LocalDate;
 
 public class ExpenseRequest {
@@ -20,4 +19,10 @@ public class ExpenseRequest {
 
     @NotNull(message = "Date is required")
     public LocalDate date;
+
+    // 🔹 ADD THESE
+    @NotBlank(message = "Payment method is required")
+    public String paymentMethod;
+
+    public String notes;
 }
