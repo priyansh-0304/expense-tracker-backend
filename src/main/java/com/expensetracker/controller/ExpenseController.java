@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/expenses")
@@ -35,11 +34,12 @@ public class ExpenseController {
 
     // ---------------- CREATE ----------------
     @PostMapping
-    public Expense addExpense(
-            @Valid @RequestBody ExpenseRequest request,
-            Authentication authentication
-    ) {
-        String email = authentication.getName();
+    public ExpenseResponse addExpense(@Valid @RequestBody ExpenseRequest request) {
+
+        String email = (String) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
 
         User user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -48,21 +48,31 @@ public class ExpenseController {
         expense.setTitle(request.title);
         expense.setAmount(request.amount);
         expense.setCategory(request.category);
+        expense.setDate(request.date);
         expense.setPaymentMethod(request.paymentMethod);
         expense.setNotes(request.notes);
-        expense.setDate(request.date);
         expense.setUser(user);
 
-        return expenseService.addExpense(expense);
+        Expense saved = expenseService.addExpense(expense);
+
+        return new ExpenseResponse(
+                saved.getId(),
+                saved.getTitle(),
+                saved.getAmount(),
+                saved.getCategory(),
+                saved.getDate(),
+                saved.getPaymentMethod(),
+                saved.getNotes()
+        );
     }
 
-    // ---------------- 🔹 PAGINATED FETCH ----------------
+    // ---------------- PAGINATED FETCH ----------------
     @GetMapping
     public Page<ExpenseResponse> getMyExpenses(
             Authentication authentication,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
-            @RequestParam(defaultValue = "date") String sortBy,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir
     ) {
         User user = userRepo.findByEmail(authentication.getName())
@@ -75,17 +85,16 @@ public class ExpenseController {
                 sortBy
         );
 
-        return expenseService
-                .getFilteredExpenseResponses(
-                        user,
-                        null,
-                        null,
-                        null,
-                        PageRequest.of(page, size, sort)
-                );
+        return expenseService.getFilteredExpenseResponses(
+                user,
+                null,
+                null,
+                null,
+                PageRequest.of(page, size, sort)
+        );
     }
 
-    // ---------------- FILTER (UNCHANGED) ----------------
+    // ---------------- FILTER ----------------
     @GetMapping("/filter")
     public Page<ExpenseResponse> getFilteredExpenses(
             Authentication authentication,
@@ -144,7 +153,7 @@ public class ExpenseController {
 
     // ---------------- UPDATE ----------------
     @PutMapping("/{id}")
-    public Expense updateExpense(
+    public ExpenseResponse updateExpense(
             @PathVariable Long id,
             @Valid @RequestBody ExpenseRequest request,
             Authentication authentication
@@ -157,7 +166,19 @@ public class ExpenseController {
         updated.setAmount(request.amount);
         updated.setCategory(request.category);
         updated.setDate(request.date);
+        updated.setPaymentMethod(request.paymentMethod);
+        updated.setNotes(request.notes);
 
-        return expenseService.updateExpense(user, id, updated);
+        Expense saved = expenseService.updateExpense(user, id, updated);
+
+        return new ExpenseResponse(
+                saved.getId(),
+                saved.getTitle(),
+                saved.getAmount(),
+                saved.getCategory(),
+                saved.getDate(),
+                saved.getPaymentMethod(),
+                saved.getNotes()
+        );
     }
 }

@@ -33,11 +33,6 @@ public class ExpenseService {
         return expenseRepo.findByUser(user);
     }
 
-    // ---------- 🔹 PAGINATION (NEW) ----------
-    public Page<Expense> getPaginatedExpenses(User user, Pageable pageable) {
-        return expenseRepo.findByUser(user, pageable);
-    }
-
     // ---------- FILTER (ENTITY) ----------
     public Page<Expense> getFilteredExpenses(
             User user,
@@ -59,12 +54,14 @@ public class ExpenseService {
     ) {
         return expenseRepo
                 .findFilteredExpenses(user, category, from, to, pageable)
-                .map(expense -> new ExpenseResponse(
-                        expense.getId(),
-                        expense.getTitle(),
-                        expense.getAmount(),
-                        expense.getCategory(),
-                        expense.getDate()
+                .map(e -> new ExpenseResponse(
+                        e.getId(),
+                        e.getTitle(),
+                        e.getAmount(),
+                        e.getCategory(),
+                        e.getDate(),
+                        e.getPaymentMethod(),
+                        e.getNotes()
                 ));
     }
 
@@ -78,6 +75,8 @@ public class ExpenseService {
         expense.setAmount(updated.getAmount());
         expense.setCategory(updated.getCategory());
         expense.setDate(updated.getDate());
+        expense.setPaymentMethod(updated.getPaymentMethod());
+        expense.setNotes(updated.getNotes());
 
         return expenseRepo.save(expense);
     }
