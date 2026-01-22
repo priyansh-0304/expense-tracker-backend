@@ -9,14 +9,14 @@ import java.util.Date;
 
 public class JwtUtil {
 
-    // MUST be at least 32 characters for HS256
+    // 🔐 Load from ENV (Render dashboard)
     private static final String SECRET =
-            "my-super-secret-key-for-expense-tracker-123";
+            System.getenv("JWT_SECRET");
 
     private static final Key key =
             Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
 
-    private static final long EXPIRATION_TIME = 1000 * 60 * 60; // 1 hour
+    private static final long EXPIRATION_TIME = 1000L * 60 * 60 * 24; // 24 hours
 
     public static String generateToken(String email) {
         return Jwts.builder()
