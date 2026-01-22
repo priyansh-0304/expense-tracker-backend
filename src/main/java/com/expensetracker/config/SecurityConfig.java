@@ -34,14 +34,18 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/auth/**",
-                                "/users/login",
-                                "/users/register",
-                                "/actuator/**"
-                        ).permitAll()
+                        // 🔑 EXPLICITLY allow POST auth endpoints
+                        .requestMatchers(HttpMethod.POST, "/users/login", "/users/register").permitAll()
+
+                        // 🔑 Preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // 🔑 Health checks
+                        .requestMatchers("/actuator/**").permitAll()
+
+                        // 🔒 Protected APIs
                         .requestMatchers("/expenses/**").authenticated()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -58,13 +62,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // 🔑 During deployment, allow all (safe because JWT)
+        // Allow all origins (JWT-based, stateless → acceptable)
         config.addAllowedOriginPattern("*");
-
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");
 
-        // 🔑 VERY IMPORTANT for JWT
+        // Required for Authorization header
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
