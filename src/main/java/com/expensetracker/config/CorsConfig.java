@@ -20,7 +20,7 @@ public class CorsConfig {
         // ✅ Add Vercel domain here
         config.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "https://YOUR_FRONTEND.vercel.app"
+                "https://expense-tracker-frontend-five-theta.vercel.app/"
         ));
 
         config.setAllowedHeaders(List.of("*"));
